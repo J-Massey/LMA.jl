@@ -100,6 +100,18 @@ values of other variables and volume information associated with the Lagrangian 
 # Returns
 - `varsnL`: A 3-dimensional array representing the variable values at Lagrangian points.
 - `volsnL`: A 2-dimensional array representing the volume information at Lagrangian points.
+
+# Details
+The calculate_velocity function iterates over each Lagrangian point specified by omLL and
+determines the corresponding grid cell indices based on the provided grid information grdnw.
+Using these grid cell indices, the function assigns the appropriate variable values from
+varnw to varsnL based on the selection criteria defined by fn and the time index iNt.
+Similarly, the function assigns the corresponding volume values from volsn to volsnL.
+The calculated velocity values, variable values (varsnL), and volume information (volsnL)
+are returned as output.
+
+Note: The function assumes a 2D scenario, where only the x and y coordinates are considered
+for interpolation and calculation.
 """
 
 
