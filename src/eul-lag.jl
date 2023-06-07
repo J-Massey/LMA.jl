@@ -1,114 +1,83 @@
+using Interpolations
+
 """
-    EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
+    eulerian_to_lagrangian(flow_snapshots, particle_positions)
 
-Translate the reference frame of a vorticity field from Eulerian to Lagrangian.
+Converts flow snapshots from an Eulerian frame to a Lagrangian frame.
 
-## Arguments
-- `ni`: Number of grid points in the x-direction.
-- `nj`: Number of grid points in the y-direction.
-- `nk`: Number of grid points in the z-direction.
-- `nr`: Number of variables.
-- `grdnw`: Array of shape `(ni, nj, nk, 3)` representing the gradient of the field.
-- `varnw`: Array of shape `(ni, nj, nk, fn, nr)` representing the vorticity field.
-- `delT`: Time step size.
-- `fn`: Flag indicating which field to use from `varnw`.
-- `Nt`: Number of time steps.
-- `omL`: Array of shape `(ni, nj, nk, Nt, 3)` to store the Lagrangian vorticity field.
-- `varsn`: Array of shape `(ni, nj, nk, Nt, nr)` to store the Lagrangian variables.
-- `volsn`: Array of shape `(ni, nj, nk, Nt, 2)` to store the Lagrangian volumes.
+# Arguments
+- `flow_snapshots`: Array containing flow snapshots at different time steps.
+- `particle_positions`: Array containing initial positions of fluid particles.
 
-## Example
-```julia
-ni = 10
-nj = 10
-nk = 10
-nr = 5
-Nt = 3
-fn = 2
-delT = 0.1
+# Returns
+- `lagrangian_trajectories`: Array containing Lagrangian trajectories of fluid particles.
 
-grdnw = rand(ni, nj, nk, 3)
-varnw = rand(ni, nj, nk, fn, nr)
-omL = zeros(ni, nj, nk, Nt, 3)
-varsn = zeros(ni, nj, nk, Nt, nr)
-volsn = ones(ni, nj, nk, Nt, 2)
-
-EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
 """
+# Example data
+n,m,t = 100,100,10
+flow_snapshots_u = rand(n, m, t)
+# Now set up a uniform grid of particles
+particle_positions = [Float64[i, j] for i in 1:n, j in 1:m]
 
-function EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
-    omLL = copy(omL)
-    varsnL = copy(varsn)
-    volsnL = copy(volsn)
-    
-    # Initialize omL
-    omL[:, :, :, 1, 1:3] .= grdnw[:, :, :, 1:3]
-    omLL[:, :, :, 1:3] .= omL[:, :, :, 1, 1:3]
-    varsn[:, :, :, 1, 1:nr] .= varnw[:, :, :, 1, 1:nr]
-    varsnL[:, :, :, 1:nr] .= varsn[:, :, :, 1, 1:nr]
-    volsn[:, :, :, 1, 1] .= volsn[:, :, :, 1, 2]
-    volsnL[:, :, :] .= volsn[:, :, :, 1, 1]
-    
-    i = 1
-    j = 1
-    k = 1
-    
-    for iNt = 2:Nt
-        # Calculate omL surface position
-        omLL[:, :, :, 1:3] .+= delT .* varsnL[:, :, :, 1:3]
-        
-        # Calculate velocity on omL surface
-        for ii in 1:ni, jj in 1:nj, kk in 1:nk
-            for i = 1:ni-1
-                if omLL[ii, jj, kk, 1] ≥ grdnw[i, j, k, 1] && omLL[ii, jj, kk, 1] < grdnw[i+1, j, k, 1]
-                    break
-                end
-            end
-            for j = 1:nj-1
-                if omLL[ii, jj, kk, 2] ≥ grdnw[i, j, k, 2] && omLL[ii, jj, kk, 2] < grdnw[i, j+1, k, 2]
-                    break
-                end
-            end
-            for k = 1:nk-1
-                if omLL[ii, jj, kk, 3] ≥ grdnw[i, j, k, 3] && omLL[ii, jj, kk, 3] < grdnw[i, j, k+1, 3]
-                    break
-                end
-            end
-            if fn == 1
-                varsnL[ii, jj, kk, 1:nr] = varnw[i, j, k, 1, 1:nr]
-                volsnL[ii, jj, kk] = volsn[i, j, k, 1, 2]
-            else
-                varsnL[ii, jj, kk, 1:nr] = varnw[i, j, k, iNt, 1:nr]
-                volsnL[ii, jj, kk] = volsn[i, j, k, iNt, 2]
-            end
+# function eulerian_to_lagrangian(flow_snapshots, particle_positions)
+num_snapshots = t
+num_particles = n*m
+lagrangian_trajectories = copy(flow_snapshots_u)
+
+# Iterate over time steps
+for t in 1:num_snapshots
+    # Extract velocity field for current snapshot
+    velocity_field = @view flow_snapshots_u[:,:,t]
+    space_interpolation = interpolate(velocity_field, BSpline(Linear()))
+    for p1 in 1:n
+        for p2 in 1:m
+            x, y = particle_positions[p1, p2]
+            u = space_interpolation(x, y)
+            println(lagrangian_trajectories[p1, p2, t]) = x + u
         end
-        
-        # Store omL and varsn
-        omL[:, :, :, iNt, 1:3] .= omLL[:, :, :, 1:3]
-        varsn[:, :, :, iNt, 1:nr] .= varsnL[:, :, :, 1:nr]
-        volsn[:, :, :, iNt, 1] .= volsnL[:, :, :] ./ sum(volsnL[:, :, :])
-        
-        println(iNt, "/", Nt)
     end
+    
+    # Iterate over particles
+    # for p in 1:num_particles
+    #     # Get particle position in the Eulerian frame
+    #     x, y = particle_positions[p, :]
+        
+    #     # Integrate velocity to obtain particle trajectory
+    #     if t == 1
+    #         # For the initial time step, the trajectory is the same as the position
+    #         lagrangian_trajectories[p, t] = (x, y)
+    #     else
+    #         # Integrate using the Euler method
+    #         dt = t  # Assuming time step is 1 unit
+    #         prev_x, prev_y, prev_z = lagrangian_trajectories[p, t - 1]
+    #         lagrangian_trajectories[p, t] = (prev_x + dt * u, prev_y + dt * vy, prev_z + dt * vz)
+    #     end
+    # end
 end
+    
+#     return lagrangian_trajectories
+# end
 
-ni = 10
-nj = 10
-nk = 10
-nr = 5
-Nt = 3
-fn = 2
-delT = 0.1
+"""
+    main()
 
-grdnw = rand(ni, nj, nk, 3)
-varnw = rand(ni, nj, nk, fn, nr)
-omL = zeros(ni, nj, nk, Nt, 3)
-varsn = zeros(ni, nj, nk, Nt, nr)
-volsn = ones(ni, nj, nk, Nt, 2)
+Example usage of `eulerian_to_lagrangian` function.
+"""
+# function main()
+# Example data
+flow_snapshots = rand(100, 100, 10)
+# Now set up a uniform grid of particles
+particle_positions = [
+    (i, j, k) for i in 1:size(flow_snapshots, 1),
+    j in 1:size(flow_snapshots, 2),
+    k in 1:size(flow_snapshots, 3)
+    ]
 
-# Run the function
-EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
+# Call the function to convert to Lagrangian frame
+lagrangian_trajectories = eulerian_to_lagrangian(flow_snapshots, particle_positions)
 
-# Assertions or other validation
-# ...
-println("Test passed!")
+# Access the particle trajectories at specific time step
+t = 3
+particle_1_trajectory = lagrangian_trajectories[1, t]
+println("Particle 1 trajectory at time step $t: $particle_1_trajectory")
+# end
