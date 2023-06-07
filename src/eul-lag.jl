@@ -1,3 +1,41 @@
+"""
+    EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
+
+Translate the reference frame of a vorticity field from Eulerian to Lagrangian.
+
+## Arguments
+- `ni`: Number of grid points in the x-direction.
+- `nj`: Number of grid points in the y-direction.
+- `nk`: Number of grid points in the z-direction.
+- `nr`: Number of variables.
+- `grdnw`: Array of shape `(ni, nj, nk, 3)` representing the gradient of the field.
+- `varnw`: Array of shape `(ni, nj, nk, fn, nr)` representing the vorticity field.
+- `delT`: Time step size.
+- `fn`: Flag indicating which field to use from `varnw`.
+- `Nt`: Number of time steps.
+- `omL`: Array of shape `(ni, nj, nk, Nt, 3)` to store the Lagrangian vorticity field.
+- `varsn`: Array of shape `(ni, nj, nk, Nt, nr)` to store the Lagrangian variables.
+- `volsn`: Array of shape `(ni, nj, nk, Nt, 2)` to store the Lagrangian volumes.
+
+## Example
+```julia
+ni = 10
+nj = 10
+nk = 10
+nr = 5
+Nt = 3
+fn = 2
+delT = 0.1
+
+grdnw = rand(ni, nj, nk, 3)
+varnw = rand(ni, nj, nk, fn, nr)
+omL = zeros(ni, nj, nk, Nt, 3)
+varsn = zeros(ni, nj, nk, Nt, nr)
+volsn = ones(ni, nj, nk, Nt, 2)
+
+EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
+"""
+
 function EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
     omLL = copy(omL)
     varsnL = copy(varsn)
@@ -54,29 +92,23 @@ function EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, vols
     end
 end
 
-function test_EUL_to_LAG()
-    # Test data
-    ni = 10
-    nj = 10
-    nk = 10
-    nr = 5
-    Nt = 3
-    fn = 2
-    delT = 0.1
-    
-    grdnw = rand(ni, nj, nk, 3)
-    varnw = rand(ni, nj, nk, fn, nr)
-    omL = zeros(ni, nj, nk, Nt, 3)
-    varsn = zeros(ni, nj, nk, Nt, nr)
-    volsn = ones(ni, nj, nk, Nt, 2)
-    
-    # Run the function
-    EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
-    
-    # Assertions or other validation
-    # ...
-    println("Test passed!")
-end
+ni = 10
+nj = 10
+nk = 10
+nr = 5
+Nt = 3
+fn = 2
+delT = 0.1
 
-# Run the test
-test_EUL_to_LAG()
+grdnw = rand(ni, nj, nk, 3)
+varnw = rand(ni, nj, nk, fn, nr)
+omL = zeros(ni, nj, nk, Nt, 3)
+varsn = zeros(ni, nj, nk, Nt, nr)
+volsn = ones(ni, nj, nk, Nt, 2)
+
+# Run the function
+EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
+
+# Assertions or other validation
+# ...
+println("Test passed!")
