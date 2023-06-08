@@ -13,11 +13,12 @@ Converts flow snapshots from an Eulerian frame to a Lagrangian frame.
 - `lagrangian_trajectories`: Array containing Lagrangian trajectories of fluid particles.
 
 """
-# Example data
+# Example data, start 1D
 n,m,t = 100,100,10
 flow_snapshots_u = rand(n, m, t)
 # Now set up a uniform grid of particles
-particle_positions = [Float64[i, j] for i in 1:n, j in 1:m]
+px = [i for i in 1:n]
+py = [j for j in 1:m]
 
 # function eulerian_to_lagrangian(flow_snapshots, particle_positions)
 num_snapshots = t
@@ -31,9 +32,10 @@ for t in 1:num_snapshots
     space_interpolation = interpolate(velocity_field, BSpline(Linear()))
     for p1 in 1:n
         for p2 in 1:m
-            x, y = particle_positions[p1, p2]
+            x = px[p1]
+            y = py[p2]
             u = space_interpolation(x, y)
-            println(lagrangian_trajectories[p1, p2, t]) = x + u
+            # println(lagrangian_trajectories[p1, p2, t]) = x + u
         end
     end
     
