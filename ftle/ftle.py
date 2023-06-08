@@ -2,9 +2,8 @@ import os
 from pathlib import Path
 from tkinter import Tcl
 import numpy as np
-from scipy.signal import savgol_filter
-from skimage.measure import find_contours
 from scipy.interpolate import RegularGridInterpolator
+from tqdm import tqdm
 
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -14,12 +13,11 @@ plt.style.use(["science"])
 plt.rcParams["font.size"] = "10.5"
 
 
-def interpolator(fs):
-    x, y, t = fs.x, fs.y, fs.t.mean(axis=3)
-    coords = (t[:, 0][:, 0], x, y)
+def interpolator(x, y, t, dat):
+    coords = (t, x, y)
     return RegularGridInterpolator(
         coords,
-        (np.einsum("ikj", fs.vorticity_z.mean(axis=3))),
+        (dat),
         method="linear",
         bounds_error=False,
         fill_value=None,
@@ -116,24 +114,64 @@ def mwe():
 
 def fns(data_dir):
     fnsv = [fn for fn in os.listdir(data_dir)
-            if fn.startswith('fluid') and fn.endswith(f'.npy')]
+            if fn.startswith('smooth') and fn.endswith(f'.npy')]
     fnsv = Tcl().call('lsort', '-dict', fnsv)
     return fnsv
 
 
 def collect_data(fns):
+    resize_shape = np.load(f"{data_dir}/example_shape.npy")
+    resize_shape = np.shape(resize_shape.squeeze())
     data = []
-    for fn in fns[0:40]:
-        data.append(np.load(f"{data_dir}/{fn}"))
+    for fn in tqdm(fns, desc="Loading data"):
+        snap = np.load(f"{data_dir}/{fn}").squeeze()
+        snap = np.resize(snap, resize_shape)
+        data.append(snap)
     return np.array(data).squeeze()
 
 
+def generate_grid(xlims, ylims):
+    snap = np.load(f"{data_dir}/example_shape.npy")
+    fsize = np.shape(snap.squeeze())
+    x = np.linspace(*xlims, fsize[0])
+    y = np.linspace(*ylims, fsize[1])
+    # X, Y = np.meshgrid(x, y)
+    t = np.linspace(0,4,len(fns(data_dir)))
+    return x,y, t
+
+
 if __name__ == "__main__":
-    data_dir = "/home/masseyj/Workspace/ReAn.jl/data"
+    data_dir = "../vort-smooth-binary"
+    fig_path = "./figures"
+
+    xlims = (-0.2, 2.0)
+    ylims = (-0.5, 0.5)
+    x, y, t = generate_grid(xlims, ylims)
+    dat = np.load(f"{data_dir}/flow-binary.npy")
+    interp = interpolator(x,y,t,dat)
+    print('success')
+
+    x = np.linspace(-0.5, 2, 300)
+    y = np.linspace(-0.5, 0.5, 400)
+    xg, yg = np.meshgrid(x, y)
+    newu = interp((5.25, xg, yg))
+
+    fig, ax = plt.subplots(figsize=(3,3))
+    cmap = sns.color_palette("seismic", as_cmap=True)
+
+    cs = ax.contourf(xg, yg, newu,
+            levels=np.linspace(-0.2,0.2,88),
+            cmap=cmap,
+            extend='both',
+            )
     
-    fig_path = f"/home/masseyj/Workspace/presentations/DisCoVor-2023/figures/12k-12-2d"
-    fig_path = "./2-D/analysis"
-    dat = collect_data(fns(data_dir))
-    print(dat.shape)
+    ax.set_aspect(1)
+
+    plt.savefig(f'test.png', dpi=300)
+    plt.close()
+
+    # dat = collect_data(fns(data_dir))
+    # print(dat.shape)
+    # np.save(f"{data_dir}/flow-binary.npy", dat)
 
     # mwe()

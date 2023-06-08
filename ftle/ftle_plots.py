@@ -49,13 +49,12 @@ def plot_sketch(x,y,c, fig_string):
     plt.savefig(f'{fig_string}', dpi=300)
     plt.close()
 
-def test(fs, interpolator, fig_string='./test.png'):
+def test(X,Y,t, interpolator, fig_string='./figures/test.png'):
     x = np.linspace(-0.5, 2, 300)
     y = np.linspace(-0.5, 0.5, 400)
-    t = np.linspace(0, 1, 10)
     xg, yg = np.meshgrid(x, y)
 
-    interp = interpolator(fs)
+    interp = interpolator(X,Y,t)
     newu = interp((5.25, xg, yg))
 
     fig, ax = plt.subplots(figsize=(3,3))
