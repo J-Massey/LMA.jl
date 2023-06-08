@@ -49,19 +49,18 @@ def plot_sketch(x,y,c, fig_string):
     plt.savefig(f'{fig_string}', dpi=300)
     plt.close()
 
-def test(X,Y,t, interpolator, fig_string='./figures/test.png'):
-    x = np.linspace(-0.5, 2, 300)
-    y = np.linspace(-0.5, 0.5, 400)
+def test(interpolator, fig_string='./figures/test.png'):
+    x = np.linspace(-0.25, 1.75, 300)
+    y = np.linspace(-0.25, 0.25, 400)
     xg, yg = np.meshgrid(x, y)
 
-    interp = interpolator(X,Y,t)
-    newu = interp((5.25, xg, yg))
+    newu = interpolator((1.25, xg, yg))
 
     fig, ax = plt.subplots(figsize=(3,3))
     cmap = sns.color_palette("seismic", as_cmap=True)
 
     cs = ax.contourf(xg, yg, newu,
-            levels=np.linspace(-0.2,0.2,88),
+            levels=np.linspace(-0.1,0.1,88),
             cmap=cmap,
             extend='both',
             )

@@ -9,8 +9,38 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from ftle_plots import visualise_advection, plot_sketch, test
 
+from multiprocessing import Pool
+from functools import partial
+
 plt.style.use(["science"])
 plt.rcParams["font.size"] = "10.5"
+
+
+def fns(data_dir):
+    fnsv = [fn for fn in os.listdir(data_dir)
+            if fn.startswith('smooth') and fn.endswith(f'.npy')]
+    fnsv = Tcl().call('lsort', '-dict', fnsv)
+    return fnsv
+
+
+def collect_data(fns):
+    resize_shape = np.load(f"{data_dir}/example_shape.npy")
+    resize_shape = np.shape(resize_shape.squeeze())
+    data = []
+    for fn in tqdm(fns, desc="Loading data"):
+        snap = np.load(f"{data_dir}/{fn}").squeeze()
+        snap = np.resize(snap, resize_shape)
+        data.append(snap)
+    return np.array(data).squeeze()
+
+
+def generate_grid(xlims, ylims):
+    snap = np.load(f"{data_dir}/example_shape.npy")
+    fsize = np.shape(snap.squeeze())
+    x = np.linspace(*xlims, fsize[1])
+    y = np.linspace(*ylims, fsize[0])
+    t = np.linspace(0,2,len(fns(data_dir)))
+    return x,y,t
 
 
 def interpolator(x, y, t, dat):
@@ -80,69 +110,7 @@ def compute_ftle(interpolator, r, grid, t0, t1, dt):
     return np.log(np.sqrt(FTLE[1:-1, 1:-1]))
 
 
-def mwe():
-    # mesh of prticles
-    # desired resolution
-    w, h = (1080, 920)
-    # w, h = w // 4, h // 4
-    x, dx = np.linspace(-0.2, 2.0, w, retstep=True)
-    y, dy = np.linspace(-0.5, 0.5, h, retstep=True)
-    X, Y = np.meshgrid(x, y)
-
-    # build grid
-    interp = interpolator(fs)
-
-    # move particles once
-    t0, t1, dt = 19, 18, 1
-
-    # time increment
-    n_snaps = 10
-    tau = np.linspace(0, 19, n_snaps)
-    for n in range(n_snaps):
-        # integrate particle in time from various initial condition
-        FTLE = compute_ftle(
-            interp,
-            np.array([X, Y]),
-            [dx, dy],
-            t0 - tau[n],
-            t1 - tau[n],
-            dt,
-        )
-
-        plot_sketch(x[1:-1], y[1:-1], np.clip(FTLE, 0, 4), f"./2-D/analysis/figures/ftle{n}.png")
-
-
-def fns(data_dir):
-    fnsv = [fn for fn in os.listdir(data_dir)
-            if fn.startswith('smooth') and fn.endswith(f'.npy')]
-    fnsv = Tcl().call('lsort', '-dict', fnsv)
-    return fnsv
-
-
-def collect_data(fns):
-    resize_shape = np.load(f"{data_dir}/example_shape.npy")
-    resize_shape = np.shape(resize_shape.squeeze())
-    data = []
-    for fn in tqdm(fns, desc="Loading data"):
-        snap = np.load(f"{data_dir}/{fn}").squeeze()
-        snap = np.resize(snap, resize_shape)
-        data.append(snap)
-    return np.array(data).squeeze()
-
-
-def generate_grid(xlims, ylims):
-    snap = np.load(f"{data_dir}/example_shape.npy")
-    fsize = np.shape(snap.squeeze())
-    x = np.linspace(*xlims, fsize[1])
-    y = np.linspace(*ylims, fsize[0])
-    t = np.linspace(0,4,len(fns(data_dir)))
-    return x,y, t
-
-
-if __name__ == "__main__":
-    data_dir = "../vort-smooth-binary"
-    fig_path = "./figures"
-
+def build_interpolator():
     xlims = (-0.35, 2.0)
     ylims = (-0.35, 0.35)
     x, y, t = generate_grid(xlims, ylims)
@@ -150,29 +118,60 @@ if __name__ == "__main__":
     print("Loaded data")
     interp = interpolator(x,y,t,dat)
     print('Interpolator built')
+    return interp
 
-    x = np.linspace(-0.25, 1.75, 700)
-    y = np.linspace(-0.25, 0.25, 900)
-    xg, yg = np.meshgrid(x, y)
-    newu = interp((3.25, xg, yg))
-    print("Interpolated")
 
-    fig, ax = plt.subplots(figsize=(3,3))
-    cmap = sns.color_palette("seismic", as_cmap=True)
+def run_ftle(n, **kwargs):
+    x,y,X,Y,dx,dy, interp, t0,t1,dt, tau = kwargs.values()
 
-    cs = ax.contourf(xg, yg, newu,
-            levels=np.linspace(-0.2,0.2,88),
-            cmap=cmap,
-            extend='both',
-            )
-    
-    ax.set_aspect(1)
+    FTLE = compute_ftle(
+            interp,
+            np.array([X, Y]),
+            [dx, dy],
+            t0 - tau[n],
+            t1 - tau[n],
+            dt,
+        )
+    print(FTLE.min(), FTLE.max())
+    np.save(f"ftle/save/ftle{n}.npy", FTLE)
 
-    plt.savefig(f'test.png', dpi=300)
-    plt.close()
+    plot_sketch(x[1:-1], y[1:-1], np.clip(FTLE, 0, 7), f"./figures/ftle{n}.png")
+
+
+def mwe():
+    # mesh of prticles
+    # desired resolution
+    w, h = (1080, 920)
+    # w, h = w // 4, h // 4
+    x, dx = np.linspace(-0.2, 2.0, w, retstep=True)
+    y, dy = np.linspace(-0.3, 0.3, h, retstep=True)
+    X, Y = np.meshgrid(x, y)
+
+    # build grid
+    interp = build_interpolator()
+
+    # move particles once
+    t0, t1, dt = 0, 2, 0.002
+
+    # time increment
+    n_snaps = len(fns(data_dir))
+    tau = np.linspace(t0, t1, n_snaps)
+
+    kwargs = {'x':x, 'y':y, 'X':X, 'Y':Y, 'dx':dx, 'dy':dy, 'interp':interp, 't0':t0, 't1':t1, 'dt':dt, 'tau':tau}
+
+    with Pool(48) as p:
+        p.map(partial(run_ftle, **kwargs), range(n_snaps))
+
+
+if __name__ == "__main__":
+    data_dir = "../vort-smooth-binary"
+    fig_path = "./figures"
+
+    # interp = build_interpolator()
+    # test(interp)
 
     # dat = collect_data(fns(data_dir))
     # print(dat.shape)
     # np.save(f"{data_dir}/flow-binary.npy", dat)
 
-    # mwe()
+    mwe()
