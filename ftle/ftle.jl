@@ -7,16 +7,12 @@ function flow_field(flow_field, n) # here `n` is "time", but we don't use it.
     return SVector(xn, yn)
 end
 
-u0 = [0.2, 0.3]
-p0 = [1.4, 0.3]
+# Example data
+n,m,t = 100,100,10
+flow = rand(n, m, t)
+particle_positions = [Float64[i, j] for i in 1:n, j in 1:m]
 
-t = 20; nx=1000; ny=1000
-flow_field_size = (t, nx, ny)
-flow_field_data = rand(t, nx, ny) 
-
- # Your flow field data goes here
-
-henon = DeterministicIteratedMap(flow_field, flow_field[1, :, :])
+henon = DeterministicIteratedMap(flow_field, flow[1, :, :], particle_positions)
 
 total_time = 10_000
 X, t = trajectory(henon, total_time)

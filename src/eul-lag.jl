@@ -1,5 +1,7 @@
 using Interpolations
+using BenchmarkTools
 using GLMakie
+using DynamicalSystems
 
 """
     eulerian_to_lagrangian(flow_snapshots, particle_positions)
@@ -14,30 +16,47 @@ Converts flow snapshots from an Eulerian frame to a Lagrangian frame.
 - `lagrangian_trajectories`: Array containing Lagrangian trajectories of fluid particles.
 
 """
-# Example data, start 1D
-n,nt = 100,10
-flow_snapshots_u = rand(n, nt)
-# Now set up a uniform grid of particles
-px = [Float64(i) for i in 1:n]
+# Test data
+nx,ny,nt = 100,100,10
+flow_snapshots_u = rand(nx, ny, nt)
+flow_snapshots_v = rand(nx, ny, nt)
 
-# function eulerian_to_lagrangian(flow_snapshots, particle_positions)
-num_snapshots = nt
-num_particles = n
+# Now set up a uniform grid of particles
+px = [Float64(i) for i in 1:nx]
+py = [Float64(i) for i in 1:ny]
+xgrid = repeat(px, 1, size(flow_snapshots_u, 1))'
+ygrid = repeat(py, 1, size(flow_snapshots_u, 2))
 
 # For the initial time step, the trajectory is the same as the position
-lagrangian_trajectories_x = repeat(px, 1, num_snapshots)
+lagrangian_trajectories_x = repeat(xgrid, 1, 1, nt)
+lagrangian_trajectories_y = repeat(ygrid, 1, 1, nt)
 
 # Iterate over time steps
-for t in 2:num_snapshots
+for t in 2:nt
     # Extract velocity field for current snapshot
-    velocity_field = @view flow_snapshots_u[:,t]
-    space_interpolation = interpolate(velocity_field, BSpline(Linear()))
-    for p1 in 1:n
-        x = px[p1]
-        u = space_interpolation(x)
-        prev_x = lagrangian_trajectories_x[p1, t - 1]
-        lagrangian_trajectories_x[p1, t] = x + u
+    U =  @view flow_snapshots_u[:,:,t]
+    space_interpolation_x = interpolate(U, BSpline(Linear()))
+    V = @view flow_snapshots_v[:,:,t]
+    space_interpolation_y = interpolate(V, BSpline(Linear()))
+
+    for p1 in 1:nx
+        for p2 in 1:ny
+            x = xgrid[p1, p2]
+            y = ygrid[p1, p2]
+            ui = space_interpolation_x(x, y)
+            vi = space_interpolation_y(x, y)
+            prev_x = lagrangian_trajectories_x[p1, p2, t - 1]
+            prev_y = lagrangian_trajectories_y[p1, p2, t - 1]
+            lagrangian_trajectories_x[p1, p2, t] = prev_x + ui # ui*dx, so positional
+            lagrangian_trajectories_y[p1, p2, t] = prev_y + vi
+        end
     end
 end
 
-println(size(lagrangian_trajectories_x))
+# @btime println(size(lagrangian_trajectories_x), size(lagrangian_trajectories_y))
+
+for t in 1:nt
+    fig, ax = scatter(vec(lagrangian_trajectories_x[:,:,t]), vec(lagrangian_trajectories_y[:,:,t]), markersize = 0.5, color = :blue)
+    save("figures/lagrangian_trajectories_$t.png", fig, px_per_unit = 1)
+end
+# scatter(vec(lagrangian_trajectories_x[:,:,5]), vec(lagrangian_trajectories_y[:,:,5]), markersize = 0.5, color = :blue)
