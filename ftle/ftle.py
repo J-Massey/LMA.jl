@@ -133,9 +133,8 @@ def collect_data(fns):
 def generate_grid(xlims, ylims):
     snap = np.load(f"{data_dir}/example_shape.npy")
     fsize = np.shape(snap.squeeze())
-    x = np.linspace(*xlims, fsize[0])
-    y = np.linspace(*ylims, fsize[1])
-    # X, Y = np.meshgrid(x, y)
+    x = np.linspace(*xlims, fsize[1])
+    y = np.linspace(*ylims, fsize[0])
     t = np.linspace(0,4,len(fns(data_dir)))
     return x,y, t
 
@@ -144,17 +143,19 @@ if __name__ == "__main__":
     data_dir = "../vort-smooth-binary"
     fig_path = "./figures"
 
-    xlims = (-0.2, 2.0)
-    ylims = (-0.5, 0.5)
+    xlims = (-0.35, 2.0)
+    ylims = (-0.35, 0.35)
     x, y, t = generate_grid(xlims, ylims)
-    dat = np.load(f"{data_dir}/flow-binary.npy")
+    dat = np.einsum("ikj",np.load(f"{data_dir}/flow-binary.npy"))
+    print("Loaded data")
     interp = interpolator(x,y,t,dat)
-    print('success')
+    print('Interpolator built')
 
-    x = np.linspace(-0.5, 2, 300)
-    y = np.linspace(-0.5, 0.5, 400)
+    x = np.linspace(-0.25, 1.75, 700)
+    y = np.linspace(-0.25, 0.25, 900)
     xg, yg = np.meshgrid(x, y)
-    newu = interp((5.25, xg, yg))
+    newu = interp((3.25, xg, yg))
+    print("Interpolated")
 
     fig, ax = plt.subplots(figsize=(3,3))
     cmap = sns.color_palette("seismic", as_cmap=True)
