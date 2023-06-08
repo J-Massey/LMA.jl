@@ -1,13 +1,10 @@
+import os
 from pathlib import Path
+from tkinter import Tcl
 import numpy as np
 from scipy.signal import savgol_filter
 from skimage.measure import find_contours
 from scipy.interpolate import RegularGridInterpolator
-
-# from lotusvis.plot_flow import Plots
-from lotusvis.flow_field import ReadIn
-from lotusvis.assign_props import AssignProps
-import scienceplots
 
 import seaborn as sns
 from matplotlib import pyplot as plt
@@ -115,23 +112,28 @@ def mwe():
         )
 
         plot_sketch(x[1:-1], y[1:-1], np.clip(FTLE, 0, 4), f"./2-D/analysis/figures/ftle{n}.png")
-        
 
 
-def fluid_snap(sim_dir):
-    fsim = ReadIn(sim_dir, "fluid", 1024, ext="vti")
-    fs = fsim.snaps(part=False, save=True)
-    fs = AssignProps(fs)
-    return fs
+def fns(data_dir):
+    fnsv = [fn for fn in os.listdir(data_dir)
+            if fn.startswith('fluid') and fn.endswith(f'.npy')]
+    fnsv = Tcl().call('lsort', '-dict', fnsv)
+    return fnsv
+
+
+def collect_data(fns):
+    data = []
+    for fn in fns[0:40]:
+        data.append(np.load(f"{data_dir}/{fn}"))
+    return np.array(data).squeeze()
 
 
 if __name__ == "__main__":
-    sim_dir = f"./2-D/2048"
-    sim_dir = f"/home/masseyj/Workspace/lotus_projects/mode-one-roughness/data/outer-scaling/12000/12-2d"
+    data_dir = "/home/masseyj/Workspace/ReAn.jl/data"
     
     fig_path = f"/home/masseyj/Workspace/presentations/DisCoVor-2023/figures/12k-12-2d"
     fig_path = "./2-D/analysis"
+    dat = collect_data(fns(data_dir))
+    print(dat.shape)
 
-    fs = fluid_snap(sim_dir)
-    # test(fs, interpolator)
-    mwe()
+    # mwe()
