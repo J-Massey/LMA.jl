@@ -24,3 +24,13 @@ docs/site/
 Manifest.toml
 
 test
+*.npy
+*.pvd
+*.vtr
+*.vti
+*.pvti
+fort.8
+fort.9
+lotus.o
+mpi.csv
+lotus
