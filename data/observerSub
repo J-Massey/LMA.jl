@@ -4,9 +4,9 @@
 #SBATCH --nodes=1
 #SBATCH --mem=94560
 #SBATCH --partition=highmem
-#SBATCH --job-name=smooth-data
+#SBATCH --job-name=obs
 #SBATCH --time=10:00:00
-#SBATCH --output=JOB.out
+#SBATCH --output=OBS.out
 # SBATCH --exclude=ruby035,ruby036,ruby037
 # SBATCH --dependency=afterok:1908224
 
@@ -18,6 +18,5 @@ module load openmpi/4.0.5/amd
 module load conda
 source activate an
 
-python run-2d.py
-python collect_save.py
+python watch_simdir.py
 
