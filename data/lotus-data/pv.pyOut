@@ -3,31 +3,4 @@ usage: /lib64/vtkpython [option] ... [-c cmd | -m mod | file | -] [arg] ...
 Try `python -h' for more information.
 Python 3.11.3 (main, May 24 2023, 00:00:00) [GCC 13.1.1 20230511 (Red Hat 13.1.1-2)] on linux
 Type "help", "copyright", "credits" or "license" for more information.
->>> [0m[1m[91m
-Loguru caught a signal: SIGINT
-[0m[0m[31mStack trace:
-23      0x5571c82616a5 pvbatch(+0x26a5) [0x5571c82616a5]
-22      0x1542f6708c0b __libc_start_main + 139
-21      0x1542f6708b4a /lib64/libc.so.6(+0x27b4a) [0x1542f6708b4a]
-20      0x5571c8261dec pvbatch(+0x2dec) [0x5571c8261dec]
-19      0x1542f65cdc52 vtkPythonInterpreter::PyMain(int, char**) + 658
-18      0x1542f4121649 /lib64/libpython3.11.so.1.0(+0x121649) [0x1542f4121649]
-17      0x1542f41989ab PyRun_AnyFileExFlags + 77
-16      0x1542f41256f8 /lib64/libpython3.11.so.1.0(+0x1256f8) [0x1542f41256f8]
-15      0x1542f419882e _PyRun_InteractiveLoopObject + 224
-14      0x1542f4198602 /lib64/libpython3.11.so.1.0(+0x198602) [0x1542f4198602]
-13      0x1542f4269d7e /lib64/libpython3.11.so.1.0(+0x269d7e) [0x1542f4269d7e]
-12      0x1542f423a7cc /lib64/libpython3.11.so.1.0(+0x23a7cc) [0x1542f423a7cc]
-11      0x1542f423ab3d /lib64/libpython3.11.so.1.0(+0x23ab3d) [0x1542f423ab3d]
-10      0x1542f41c3e9c /lib64/libpython3.11.so.1.0(+0x1c3e9c) [0x1542f41c3e9c]
-9       0x1542f41c4d4d /lib64/libpython3.11.so.1.0(+0x1c4d4d) [0x1542f41c4d4d]
-8       0x1542f4100626 /lib64/libpython3.11.so.1.0(+0x100626) [0x1542f4100626]
-7       0x1542f416e98a PyOS_Readline + 217
-6       0x1542f416e79a /lib64/libpython3.11.so.1.0(+0x16e79a) [0x1542f416e79a]
-5       0x1542f67581b4 fgets + 164
-4       0x1542f675948a _IO_getline_info + 170
-3       0x1542f6766f79 _IO_default_uflow + 57
-2       0x1542f6765b7b _IO_file_underflow + 411
-1       0x1542f67e20c1 read + 17
-0       0x1542f671eb70 /lib64/libc.so.6(+0x3db70) [0x1542f671eb70][0m
-[0m[31m(  10.014s) [pvbatch         ]                       :0     FATL| Signal: SIGINT[0m
+>>> 

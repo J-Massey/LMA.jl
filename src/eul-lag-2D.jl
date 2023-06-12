@@ -1,182 +1,70 @@
-using Test
-"""
-    EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
-
-Translate the reference frame of a vorticity field from Eulerian to Lagrangian.
-The input to the algorithm is a set of Eulerian flow fields and associated flow
-parameters that include the grid, the solution state variables, the number of snapshots
-(Nt ) and the time step (δt)
-
-## Arguments
-- `ni`: Number of grid points in the x-direction.
-- `nj`: Number of grid points in the y-direction.
-- `nk`: Number of grid points in the z-direction.
-- `nr`: Number of variables.
-- `grdnw`: Array of shape `(ni, nj, nk, 3)` representing the gradient of the field.
-- `varnw`: Array of shape `(ni, nj, nk, fn, nr)` representing the vorticity field.
-- `delT`: Time step size.
-- `fn`: Flag indicating which field to use from `varnw`.
-- `Nt`: Number of time steps.
-- `omL`: Array of shape `(ni, nj, nk, Nt, 3)` to store the Lagrangian vorticity field.
-- `varsn`: Array of shape `(ni, nj, nk, Nt, nr)` to store the Lagrangian variables.
-- `volsn`: Array of shape `(ni, nj, nk, Nt, 2)` to store the Lagrangian volumes.
-
-## Example
-```julia
-ni = 10
-nj = 10
-nk = 10
-nr = 5
-Nt = 3
-fn = 2
-delT = 0.1
-
-grdnw = rand(ni, nj, nk, 3)
-varnw = rand(ni, nj, nk, fn, nr)
-omL = zeros(ni, nj, nk, Nt, 3)
-varsn = zeros(ni, nj, nk, Nt, nr)
-volsn = ones(ni, nj, nk, Nt, 2)
-
-EUL_to_LAG(ni, nj, nk, nr, grdnw, varnw, delT, fn, Nt, omL, varsn, volsn)
-"""
-
-function initialize_fields(ni, nj, nr, Nt, grdnw, varnw)
-    omL = zeros(ni, nj, Nt, 3)
-    varsn = zeros(ni, nj, Nt, nr)
-    volsn = ones(ni, nj, Nt, 2)
-    
-    omL[:, :, 1, 1:3] .= grdnw[:, :, 1:3]
-    varsn[:, :, 1, 1:nr] .= varnw[:, :, 1, 1:nr]
-    volsn[:, :, 1, 1] .= volsn[:, :, 1, 2]
-    
-    return omL, varsn, volsn
-end
+using Interpolations
+using BenchmarkTools
+using GLMakie
+using DynamicalSystems
+using NPZ
 
 """
-    calculate_surface_position(omL, delT, varsnL)
+    eulerian_to_lagrangian(flow_snapshots, particle_positions)
 
-This function updates the positions of Lagrangian points based on the current velocity field.
+Converts flow snapshots from an Eulerian frame to a Lagrangian frame.
 
 # Arguments
-- `omL`: A 5-dimensional array representing the Lagrangian point positions.
-- `delT`: The time step used for the update.
-- `varsnL`: A 4-dimensional array representing the current velocity field.
+- `flow_snapshots`: Array containing flow snapshots at different time steps.
+- `particle_positions`: Array containing initial positions of fluid particles.
 
 # Returns
-- `omLL`: A 4-dimensional array containing the updated Lagrangian point positions.
-
-# Details
-The `calculate_surface_position` function calculates the new positions of the Lagrangian points
-after a time step (`delT`). It adds the displacement obtained from the current velocity field (`varsnL`)
-to the Lagrangian point positions (`omL`). The updated positions are stored in a new array `omLL`.
+- `lagrangian_trajectories`: Array containing Lagrangian trajectories of fluid particles.
 
 """
-function calculate_surface_position(omL, delT, varsnL)
-    # Create a copy of the current Lagrangian point positions (omL) and store it in omLL.
-    omLL = copy(omL)
-    # Multiply the velocity field (varsnL) by the time step (delT) and add the result to
-    # the corresponding positions in omLL. This step accounts for the displacement of the
-    # Lagrangian points due to the velocity.
-    omLL[:, :, 1:3] .+= delT .* varsnL[:, :, 1:3]
-    return omLL
-end
+# Test data
+xlims, ylims = (-0.35, 2), (-0.35, 0.35)
 
-"""
-    calculate_velocity(ni, nj, omLL, grdnw, varnw, fn, iNt)
+# Load flow snapshots
+flow_snapshots_u = npzread("data/data/u.npy")
+flow_snapshots_v = npzread("data/data/v.npy")
 
-The calculate_velocity function calculates the velocity values at Lagrangian points based
-on their positions and the provided grid information. It also determines the corresponding
-values of other variables and volume information associated with the Lagrangian points.
+nt, nx, ny = size(flow_snapshots_u)
 
-# Arguments
-- `ni`: An integer specifying the number of grid points along the x-axis.
-- `nj`: An integer specifying the number of grid points along the y-axis.
-- `omLL`: A 3-dimensional array representing the Lagrangian point positions (x, y, z).
-- `grdnw`: A 4-dimensional array representing the grid information (x, y, z) used for interpolation.
-- `varnw`: A 5-dimensional array representing the variable values associated with the grid points.
-- `fn`: An integer indicating the selection criteria for variable values.
-- `iNt`: An integer specifying the time index.
+pxs = LinRange(xlims..., nx)
+pys = LinRange(ylims..., ny)
 
-# Returns
-- `varsnL`: A 3-dimensional array representing the variable values at Lagrangian points.
-- `volsnL`: A 2-dimensional array representing the volume information at Lagrangian points.
+# Now set up a uniform grid of particles
+xgrid = repeat(pxs, 1, size(flow_snapshots_u, 2))
+ygrid = repeat(pys, 1, size(flow_snapshots_u, 1))'
 
-# Details
-The calculate_velocity function iterates over each Lagrangian point specified by omLL and
-determines the corresponding grid cell indices based on the provided grid information grdnw.
-Using these grid cell indices, the function assigns the appropriate variable values from
-varnw to varsnL based on the selection criteria defined by fn and the time index iNt.
-Similarly, the function assigns the corresponding volume values from volsn to volsnL.
-The calculated velocity values, variable values (varsnL), and volume information (volsnL)
-are returned as output.
+# For the initial time step, the trajectory is the same as the position
+lagrangian_trajectories_x = repeat(xgrid, 1, 1, nt)
+lagrangian_trajectories_y = repeat(ygrid, 1, 1, nt)
 
-Note: The function assumes a 2D scenario, where only the x and y coordinates are considered
-for interpolation and calculation.
-"""
+# Iterate over time steps
+for t in 2:nt
+    # Extract velocity field for current snapshot
+    U =  @view flow_snapshots_u[:,:,t]
+    space_interpolation_u = interpolate((pxs, pys), U, Gridded(Linear()))
+    V = @view flow_snapshots_v[:,:,t]
+    space_interpolation_y = interpolate((pxs, pys), V, Gridded(Linear()))
 
-
-function calculate_velocity(ni, nj, omLL, grdnw, varnw, fn, iNt)
-    varsnL = zeros(ni, nj, nr)
-    volsnL = zeros(ni, nj)
-    
-    for ii in 1:ni, jj in 1:nj
-        for i = 1:ni-1
-            if omLL[ii, jj, 1] ≥ grdnw[i, j, 1] && omLL[ii, jj, 1] < grdnw[i+1, j, 1]
-                break
-            end
-        end
-        for j = 1:nj-1
-            if omLL[ii, jj, 2] ≥ grdnw[i, j, 2] && omLL[ii, jj, 2] < grdnw[i, j+1, 2]
-                break
-            end
-        end
-        if fn == 1
-            varsnL[ii, jj, 1:nr] = varnw[i, j, 1, 1:nr]
-            volsnL[ii, jj] = volsn[i, j, 1, 2]
-        else
-            varsnL[ii, jj, 1:nr] = varnw[i, j, iNt, 1:nr]
-            volsnL[ii, jj] = volsn[i, j, iNt, 2]
+    for p1 in 1:nx
+        for p2 in 1:ny
+            x = pxs[p1]
+            y = pys[p2]
+            ui = space_interpolation_u(x, y)
+            vi = space_interpolation_y(x, y)
+            prev_x = lagrangian_trajectories_x[p1, p2, t - 1]
+            prev_y = lagrangian_trajectories_y[p1, p2, t - 1]
+            lagrangian_trajectories_x[p1, p2, t] = prev_x + ui # ui*dx, so positional
+            lagrangian_trajectories_y[p1, p2, t] = prev_y + vi
         end
     end
-    
-    return varsnL, volsnL
 end
 
-function store_fields(omL, varsn, volsn, omLL, varsnL, volsnL, iNt)
-    omL[:, :, iNt, 1:3] .= omLL[:, :, 1:3]
-    varsn[:, :, iNt, 1:nr] .= varsnL[:, :, 1:nr]
-    volsn[:, :, iNt, 1] .= volsnL[:, :] ./ sum(volsnL[:, :])
+for ti in 1:nt
+    fig = Figure()
+    ax = Axis(fig[1, 1])
+    xlims!(ax, xlims...)
+    ylims!(ax, ylims...)
+    println("Plotting time step $ti")
+    scatter!(ax, vec(lagrangian_trajectories_x[:,:,ti]), vec(lagrangian_trajectories_y[:,:,ti]), markersize = 0.5, color = :blue)
+    save("figures/lagrangian_trajectories_$ti.png", fig)
 end
-
-function EUL_to_LAG(ni, nj, nr, fn, Nt, delT, grdnw, varnw)
-    omL, varsn, volsn = initialize_fields(ni, nj, nr, fn, Nt, grdnw, varnw)
-    omLL = copy(omL)
-    varsnL = copy(varsn)
-    volsnL = copy(volsn)
-    
-    for iNt = 2:Nt
-        omLL = calculate_surface_position(omLL, delT, varsnL)
-        varsnL, volsnL = calculate_velocity(ni, nj, omLL, grdnw, varnw, fn, iNt)
-        store_fields(omL, varsn, volsn, omLL, varsnL, volsnL, iNt)
-        
-        println(iNt, "/", Nt)
-    end
-    
-    return omL, varsn, volsn
-end
-
-ni = 10
-nj = 10
-nr = 5
-Nt = 3
-fn = 2
-delT = 0.1
-
-grdnw = rand(ni, nj, 3)
-varnw = rand(ni, nj, fn, nr)
-omLL, varsnL, volsnL = initialize_fields(ni, nj, nr, Nt, grdnw, varnw)
-omLL = calculate_surface_position(omLL, delT, varsnL)
-varsnL, volsnL = calculate_velocity(ni, nj, omLL, grdnw, varnw, fn, iNt)
-
-
-# omL, varsn, volsn = EUL_to_LAG(ni, nj, nr, fn, Nt, delT, grdnw, varnw)

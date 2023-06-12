@@ -1,7 +1,9 @@
 using Interpolations
-using BenchmarkTools
+# using BenchmarkTools
 using GLMakie
-using DynamicalSystems
+# using DynamicalSystems
+using NPZ
+using Statistics
 
 """
     eulerian_to_lagrangian(flow_snapshots, particle_positions)
@@ -18,13 +20,36 @@ Converts flow snapshots from an Eulerian frame to a Lagrangian frame.
 """
 # Test data
 xlims, ylims = (-0.35, 2), (-0.35, 0.35)
-nx,ny,nt = 1080,1920,10
+
+# Load flow snapshots
+flow_snapshots_u = npzread("data/data/u.npy")
+flow_snapshots_u = permutedims(flow_snapshots_u, [3, 2, 1])
+flow_snapshots_v = npzread("data/data/v.npy")
+flow_snapshots_v = permutedims(flow_snapshots_v, [3, 2, 1])
+# take away the time mean
+flow_snapshots_u = flow_snapshots_u .- mean(flow_snapshots_u, dims = 3)
+flow_snapshots_v = flow_snapshots_v .- mean(flow_snapshots_v, dims = 3)
+
+function testplot()
+    # Quick test plot
+    f = Figure()
+    ax = Axis(f[1, 1])
+    co = contourf!(ax,
+        collect(flow_snapshots_u[:, :, 1]),
+        xlabel=L"x", ylabel=L"y", title=L"ω_z",
+        # levels = range(-0.1, 1.5, length = 44),
+        # colormap=:icefire,
+        extendlow = :auto, extendhigh = :auto,
+    )
+    tightlimits!(ax)
+    return f
+end
+
+nx, ny, nt = size(flow_snapshots_u)
+dt = 4/nt
 
 pxs = LinRange(xlims..., nx)
 pys = LinRange(ylims..., ny)
-
-flow_snapshots_u = rand(nx, ny, nt)
-flow_snapshots_v = rand(nx, ny, nt)
 
 # Now set up a uniform grid of particles
 xgrid = repeat(pxs, 1, size(flow_snapshots_u, 2))
@@ -50,8 +75,8 @@ for t in 2:nt
             vi = space_interpolation_y(x, y)
             prev_x = lagrangian_trajectories_x[p1, p2, t - 1]
             prev_y = lagrangian_trajectories_y[p1, p2, t - 1]
-            lagrangian_trajectories_x[p1, p2, t] = prev_x + ui # ui*dx, so positional
-            lagrangian_trajectories_y[p1, p2, t] = prev_y + vi
+            lagrangian_trajectories_x[p1, p2, t] = prev_x + ui*dt
+            lagrangian_trajectories_y[p1, p2, t] = prev_y + vi*dt
         end
     end
 end
@@ -59,8 +84,8 @@ end
 for ti in 1:nt
     fig = Figure()
     ax = Axis(fig[1, 1])
-    xlims!(ax, xlims...)
-    ylims!(ax, ylims...)
+    xlims!(ax, -0.35, 2.5)
+    ylims!(ax, -0.35, 0.35)
     println("Plotting time step $ti")
     scatter!(ax, vec(lagrangian_trajectories_x[:,:,ti]), vec(lagrangian_trajectories_y[:,:,ti]), markersize = 0.5, color = :blue)
     save("figures/lagrangian_trajectories_$ti.png", fig)

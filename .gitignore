@@ -29,5 +29,7 @@ test
 *.vtr
 *.vti
 *.pvti
+mpi.csv
+pv/pyOut
 
-lagrangian_traj*
+lagrangian_trajectories_*
