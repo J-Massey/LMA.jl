@@ -11,9 +11,9 @@ program swimming_plate
   ! -- Physical parameters
     real,parameter     :: Re = 100000
   !
-    real,parameter     :: L=4096, nu=L/Re
-    real, parameter    :: finish=12
-    integer            :: b(3) = [32,32,1]
+    real,parameter     :: L=1024, nu=L/Re
+    real, parameter    :: finish=20
+    integer            :: b(3) = [4,4,1]
   !
   ! -- Hyperparameters
     real, parameter    :: thicc=0.03*L
@@ -87,8 +87,7 @@ program swimming_plate
   
         inquire(file='.kill', exist=there)
         if (there) exit time_loop
-        if((t>(finish-2)/f).and.(mod(t,0.002/f)<dt)) call flow%write(geom, write_vtr=.false.)
-        ! exit
+        if((t>(finish-12)/f).and.(mod(t,0.0025/f)<dt)) call flow%write(geom, write_vtr=.false.)
       end do time_loop
       
       if(root) print *,'Loop complete: writing restart files and exiting'

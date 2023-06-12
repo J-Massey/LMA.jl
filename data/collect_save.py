@@ -26,6 +26,17 @@ def collect_data(fns, data_dir="./data"):
         os.remove(f"{data_dir}/{fn}")
     return np.array(data).squeeze()
 
+def oneop():
+    data_dir = "./data"
+    root = "u"
+    fns = fns(data_dir, root)
+    data = collect_data(fns, data_dir)
+    np.save(f"{data_dir}/u.npy", data)
+    root = "v"
+    fns = fns(data_dir, root)
+    data = collect_data(fns, data_dir)
+    np.save(f"{data_dir}/v.npy", data)
+
 
 if __name__ == "__main__":
     data_dir = "./data"
