@@ -29,3 +29,5 @@ test
 *.vtr
 *.vti
 *.pvti
+
+lagrangian_traj*
