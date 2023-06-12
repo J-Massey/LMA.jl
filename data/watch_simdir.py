@@ -1,26 +1,20 @@
-from pathlib import Path
-import numpy as np
 import os
+import time
+import numpy as np
 from tkinter import Tcl
 
 from lotusvis.flow_field import ReadIn
-from lotusvis.assign_props import AssignProps
-
-import os
-import time
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 
 
 def fluid_snap(sim_dir, fn, count):
-    fsim = ReadIn(sim_dir, fluid_ext, 4096, ext="vti")
-    fsim.u_low_memory_saver(fn, count, save_path="./data")
-    fsim.v_low_memory_saver(fn, count, save_path="./data")
+    fsim = ReadIn(sim_dir, 'fluid', 4096, ext="vti")
+    fsim.u_low_memory_saver(fn, count, "./data")
+    fsim.v_low_memory_saver(fn, count, "./data")
 
 
 def body_snap(sim_dir, fn, count):
-    bsim = ReadIn(sim_dir, body_ext, 4096, ext="vti")
-    bsim.save_sdf_low_memory(fn, count, save_path="./data")
+    bsim = ReadIn(sim_dir, 'bodyF', 4096, ext="vti")
+    bsim.save_sdf_low_memory(fn, count, "./data")
 
 
 def bmask(count):
@@ -63,67 +57,46 @@ def fns():
     fnsb = [
         fn
         for fn in os.listdir("./data")
-        if fn.startswith(body_ext) and fn.endswith(f".npy")
+        if fn.startswith('bodyF') and fn.endswith(f".npy")
     ]
     fnsb = Tcl().call("lsort", "-dict", fnsb)
     return fnsu, fnsv, fnsb
 
-
-class FileHandler(FileSystemEventHandler):
-    def __init__(self, parent_dir, file_extension):
-        super(FileHandler, self).__init__()
-        self.parent_dir = parent_dir
-        self.count = 0
-        self.delete_count = 0
-
-    def on_created(self, event):
-        if not event.is_directory:
-            for dirpath, dirnames, filenames in os.walk(self.parent_dir):
-                # for filename in filenames:
-                if dirpath.endswith("datp"):
-                    # Buffer to allow finish writing
-                    time.sleep(0.1)
-                    # Sort the files
-                    dpdfs = [fp for fp in os.listdir(dirpath)]
-                    dpdfs = Tcl().call("lsort", "-dict", dpdfs)
-                    for fn in dpdfs:
-                        if fn.startswith("fluid") and fn.endswith(".pvti"):
-                            path = os.path.join(dirpath, fn)
-                            fluid_snap(sim_dir, path, self.count)
-                        if fn.startswith("bodyF") and fn.endswith(".pvti"):
-                            path = os.path.join(dirpath, fn)
-                            body_snap(sim_dir, path, self.count)
-                            self.count += 1
-            for dirpath, dirnames, filenames in os.walk(self.parent_dir):
-                for filename in filenames:
-                    if (filename.startswith("fluid") or filename.startswith("bodyF")) and \
-                    (not filename.endswith(".pvtr") and not filename.endswith(".vtr") and not filename.endswith("vtr.pvd")):
-                        file_path = os.path.join(dirpath, filename)
-                        os.remove(file_path)
-                        self.delete_count += 1
-            bmask(self.count)
-
-            print(f"Total files deleted: {self.delete_count}")
+# Specify the directory to monitor
+directory_to_watch = "./lotus-data"
 
 
-def watch_and_delete(parent_dir, file_extension):
-    event_handler = FileHandler(parent_dir, file_extension)
-    observer = Observer()
-    observer.schedule(event_handler, parent_dir, recursive=False)
-    observer.start()
+while True:
+    count=0
+    delete_count = 0
+    for root, _, files in os.walk(directory_to_watch):
+        # Process files
+        for file in files:
+            print("File created:", os.path.join(root, file))
+            if root.endswith("datp"):
+                # Buffer to allow finish writing
+                time.sleep(0.1)
+                # Sort the files
+                dpdfs = [fp for fp in os.listdir(root)]
+                dpdfs = Tcl().call("lsort", "-dict", dpdfs)
+                for fn in dpdfs:
+                    if fn.startswith("fluid") and fn.endswith(".pvti"):
+                        path = os.path.join(root, fn)
+                        fluid_snap(directory_to_watch, path, count)
+                    if fn.startswith("bodyF") and fn.endswith(".pvti"):
+                        path = os.path.join(root, fn)
+                        body_snap(directory_to_watch, path, count)
+                        count += 1
+    for root, _, files in os.walk(directory_to_watch):
+        for file in files:
+            if (file.startswith("fluid") or file.startswith("bodyF")) and \
+            (not file.endswith(".pvtr") and not file.endswith(".vtr") and not file.endswith("vtr.pvd")):
+                file_path = os.path.join(root, file)
+                os.remove(file_path)
+                delete_count += 1
+    bmask(count)
 
-    try:
-        while True:
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        observer.stop()
+    print(f"Total files deleted: {delete_count}")
 
-    observer.join()
-
-
-if __name__ == "__main__":
-    sim_dir = f"./lotus-data"
-    fluid_ext = "fluid"
-    body_ext = "bodyF"
-    save_ext = "smooth"
-    watch_and_delete(sim_dir, "bodyF.")
+    # Sleep for a certain duration before checking again
+    time.sleep(0.1)

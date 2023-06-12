@@ -29,22 +29,22 @@ def collect_data(fns, data_dir="./data"):
 def oneop():
     data_dir = "./data"
     root = "u"
-    fns = fns(data_dir, root)
-    data = collect_data(fns, data_dir)
+    fn = fns(data_dir, root)
+    data = collect_data(fn, data_dir)
     np.save(f"{data_dir}/u.npy", data)
     root = "v"
-    fns = fns(data_dir, root)
-    data = collect_data(fns, data_dir)
+    fn = fns(data_dir, root)
+    data = collect_data(fn, data_dir)
     np.save(f"{data_dir}/v.npy", data)
 
 
 if __name__ == "__main__":
     data_dir = "./data"
     root = "u"
-    fns = fns(data_dir, root)
-    data = collect_data(fns, data_dir)
+    fn = fns(data_dir, root)
+    data = collect_data(fn, data_dir)
     np.save(f"{data_dir}/u.npy", data)
     root = "v"
-    fns = fns(data_dir, root)
-    data = collect_data(fns, data_dir)
+    fn = fns(data_dir, root)
+    data = collect_data(fn, data_dir)
     np.save(f"{data_dir}/v.npy", data)

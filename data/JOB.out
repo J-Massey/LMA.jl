@@ -1,0 +1,105 @@
+Running SLURM prolog script on ruby059.cluster.local
+===============================================================================
+Job started on Mon Jun 12 12:29:35 BST 2023
+Job ID          : 3748799
+Job name        : smooth-data
+WorkDir         : /ssdfs/users/jmom1n15/thicc-swimmer/LMA.jl/data
+Command         : /ssdfs/users/jmom1n15/thicc-swimmer/LMA.jl/data/dataSub
+Partition       : amd
+Num hosts       : 1
+Num cores       : 64
+Num of tasks    : 64
+Hosts allocated : ruby059
+Job Output Follows ...
+===============================================================================
+Starting calculation at Mon Jun 12 12:29:35 BST 2023
+---------------------------------------------------------------
+rm: cannot remove '/ssdfs/users/jmom1n15/thicc-swimmer/LMA.jl/data/lotus-data/*': No such file or directory
+make: Entering directory `/mainfs/home/jmom1n15/Lotus/solver/src/geom'
+make: `libgeom.a' is up to date.
+make: Leaving directory `/mainfs/home/jmom1n15/Lotus/solver/src/geom'
+make: Entering directory `/mainfs/home/jmom1n15/Lotus/solver/src/oop'
+make: `libfluid.a' is up to date.
+make: Leaving directory `/mainfs/home/jmom1n15/Lotus/solver/src/oop'
+mpif90 -cpp -DMPION  -Ofast -funroll-loops --param max-unroll-times=4  -I/home/jmom1n15/Lotus/solver/src/oop -I/home/jmom1n15/Lotus/solver/src/geom/geom_lib_include -c lotus.f90
+mpif90 -cpp -DMPION  -Ofast -funroll-loops --param max-unroll-times=4  -o lotus lotus.o -L/home/jmom1n15/Lotus/solver/src/oop/. -L/home/jmom1n15/Lotus/solver/src/geom/. -lfluid -lgeom
+ Setting up the grid, body and fluid
+ -----------------------------------
+composite(1024.0)=1024
+  products :1*2**10
+composite(1024.0)=1024
+  products :1*2**10
+composite(.0)=1
+ Stretched grid sections:
+  negative: r= 1.5%, h_max=21.5
+  positive: r= 1.5%, h_max=16.3
+ grid symmetry:  F
+ Stretched grid sections:
+  negative: r= 2.1%, h_max=25.6
+  positive: r= 2.1%, h_max=25.6
+ grid symmetry:  T
+ Starting time update loop
+ -----------------------------------
+Time:          0.000
+Time:          1.002
+Time:          2.001
+Time:          3.001
+Time:          4.000
+Time:          5.001
+Time:          6.001
+Time:          7.001
+Time:          8.001
+Time:          9.001
+Time:         10.000
+Time:         11.000
+Time:         12.001
+Time:         13.001
+Time:         14.001
+Time:         15.000
+Time:         16.001
+Time:         17.001
+Time:         18.000
+Time:         19.001
+ Loop complete: writing restart files and exiting
+ -----------------------------------
+Number of proccessors :64
+Run folder            :/ssdfs/users/jmom1n15/thicc-swimmer/LMA.jl/data/lotus-data
+No read folder
+Folder /ssdfs/users/jmom1n15/thicc-swimmer/LMA.jl/data/lotus-data exists!
+Moving contents to trash
+Setting up in /ssdfs/users/jmom1n15/thicc-swimmer/LMA.jl/data/lotus-data
+No postprocessing set up
+No stopping criteria, the simulation will run its course
+Making executable 
+Finished executable 
+Running executable 
+Run all python files for postprocessing
+Popping back up
+Traceback (most recent call last):
+  File "/ssdfs/users/jmom1n15/thicc-swimmer/LMA.jl/data/collect_save.py", line 45, in <module>
+    data = collect_data(fn, data_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/ssdfs/users/jmom1n15/thicc-swimmer/LMA.jl/data/collect_save.py", line 19, in collect_data
+    resize_shape = np.load(f"{data_dir}/{fns[0]}")
+                                         ~~~^^^
+IndexError: string index out of range
+==============================================================================
+Running epilogue script on ruby059.
+
+Submit time  : 2023-06-12T12:18:50
+Start time   : 2023-06-12T12:29:35
+End time     : 2023-06-12T12:56:26
+Elapsed time : 00:26:51 (Timelimit=10:00:00)
+
+Job ID: 3748799
+Cluster: i5
+User/Group: jmom1n15/mm
+State: FAILED (exit code 1)
+Nodes: 1
+Cores per node: 64
+CPU Utilized: 22:06:16
+CPU Efficiency: 77.18% of 1-04:38:24 core-walltime
+Job Wall-clock time: 00:26:51
+Memory Utilized: 4.52 GB
+Memory Efficiency: 2.01% of 225.00 GB
+
