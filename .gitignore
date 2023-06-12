@@ -28,15 +28,4 @@ test
 *.pvd
 *.vtr
 *.vti
-<<<<<<< Updated upstream
 *.pvti
-*.pvtr
-fort.8
-fort.9
-lotus.o
-mpi.csv
-lotus
-pv.pyOut
-=======
-*.pvti
->>>>>>> Stashed changes
