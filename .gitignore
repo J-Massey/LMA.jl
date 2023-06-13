@@ -24,19 +24,16 @@ docs/site/
 Manifest.toml
 
 test
+lotus-data
 *.npy
 *.pvd
 *.vtr
 *.vti
 *.pvti
-mpi.csv
-pv/pyOut
 
-lagrangian_trajectories_*
+lagrangian_trajectories_[0-9].png
+lagrangian_trajectories_??.png
+lagrangian_trajectories_???.png
+lagrangian_trajectories_???.png
 
-fort.8
-fort.9
-mpi.csv
-lotus.o
-py.pyOut
-lotus
+
