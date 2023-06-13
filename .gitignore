@@ -24,7 +24,7 @@ docs/site/
 Manifest.toml
 
 test
-lotus-data
+/data/lotus-data
 *.npy
 *.pvd
 *.vtr
