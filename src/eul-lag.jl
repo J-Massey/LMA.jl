@@ -81,6 +81,10 @@ for t in 2:nt
     end
 end
 
+#save the data
+npzwrite("data/data/lagrangian_trajectories_x.npy", lagrangian_trajectories_x)
+npzwrite("data/data/lagrangian_trajectories_y.npy", lagrangian_trajectories_y)
+
 for ti in 1:nt
     fig = Figure()
     ax = Axis(fig[1, 1])

@@ -6,13 +6,13 @@ from lotusvis.flow_field import ReadIn
 
 
 def fluid_snap(sim_dir, fn, count):
-    fsim = ReadIn(sim_dir, 'fluid', 512, ext="vti")
+    fsim = ReadIn(sim_dir, 'fluid', 1024, ext="vti")
     fsim.u_low_memory_saver(fn, count, "./data")
     fsim.v_low_memory_saver(fn, count, "./data")
 
 
 def body_snap(sim_dir, fn, count):
-    bsim = ReadIn(sim_dir, 'bodyF', 512, ext="vti")
+    bsim = ReadIn(sim_dir, 'bodyF', 1024, ext="vti")
     bsim.save_sdf_low_memory(fn, count, "./data")
 
 

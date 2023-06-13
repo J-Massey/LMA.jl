@@ -4,7 +4,7 @@ from collect_save import oneop
 
 
 def run2d():
-    run(64, f'{cwd}/lotus-data')
+    run(4, f'{cwd}/lotus-data')
 
 if __name__ == "__main__":
     cwd = Path.cwd()
