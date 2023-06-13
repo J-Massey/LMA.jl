@@ -33,3 +33,10 @@ mpi.csv
 pv/pyOut
 
 lagrangian_trajectories_*
+
+fort.8
+fort.9
+mpi.csv
+lotus.o
+py.pyOut
+lotus
